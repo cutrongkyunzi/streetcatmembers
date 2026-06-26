@@ -590,7 +590,7 @@ function fmtDate(d){const dt=typeof d==='string'?new Date(d):d;return`${dt.getFu
 function fmtPrice(p){return Number(p).toLocaleString()+'원';}
 function initials(n){return n?n.slice(0,2):'?';}
 function avClass(n){return 'av-'+(n.charCodeAt(0)%5);}
-function getAdminPw(){return localStorage.getItem(ADMIN_PW_KEY)||'1234';}
+function getAdminPw(){return '2010';}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 function passBadgeHtml(p){
@@ -1206,15 +1206,6 @@ window.myAddHolding=async function(){
 };
 
 /* ── ADMIN ── */
-window.changeAdminPw=function(){
-  const cur=document.getElementById('pw-current').value,nw=document.getElementById('pw-new').value,cf=document.getElementById('pw-confirm').value;
-  if(cur!==getAdminPw()){showToast('현재 비밀번호가 틀렸습니다');return;}
-  if(nw.length<4){showToast('4자리 이상 입력해주세요');return;}
-  if(nw!==cf){showToast('새 비밀번호가 일치하지 않습니다');return;}
-  localStorage.setItem(ADMIN_PW_KEY,nw);
-  ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
-  showToast('비밀번호 변경 완료 ✅');
-};
 
 function renderAdminMemberSelect(){
   const sel=document.getElementById('admin-member-select');
