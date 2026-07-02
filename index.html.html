@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>크로스핏 스트릿캣</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#f4f4f2; --surface:#ffffff; --border:#e8e6e0; --border-strong:#c8c5bc;
+  --text:#1a1a18; --text-muted:#6b6963; --text-faint:#a8a49e;
+  --accent:#d94f2a; --accent-light:#faeee9;
+  --green:#2a7d4f; --green-light:#e6f4ed;
+  --amber:#b05a08; --amber-light:#fef3e6;
+  --red:#c0312b; --red-light:#fdecea;
+  --purple:#6d3aad; --purple-light:#f0e8f9;
+  --blue:#1a5fb4; --blue-light:#ddeeff;
+  --radius:14px; --radius-sm:8px; --tab-h:64px; --header-h:52px;
+}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-tap-highlight-color:transparent;}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:90;overflow-y:auto;}
+.login-inner{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
+.login-logo{width:72px;height:72px;background:var(--accent);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:16px;}
+.login-title{font-size:22px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--text-muted);margin-bottom:32px;}
+.login-card{background:var(--surface);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;}
+.login-tabs{display:flex;background:var(--bg);border-radius:var(--radius-sm);padding:3px;margin-bottom:20px;}
+.login-tab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:700;border-radius:6px;cursor:pointer;color:var(--text-muted);border:none;background:none;font-family:inherit;transition:all .15s;}
+.login-tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
+/* HEADER */
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100;}
+.logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;}
+.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);}
+.sync-dot.live{background:var(--green);}
+.logout-btn{font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer;font-family:inherit;}
+
+/* SCROLL */
+.scroll-area{position:fixed;top:var(--header-h);left:0;right:0;bottom:var(--tab-h);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.section{display:none;padding:16px 16px 24px;}
+.section.active{display:block;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:var(--surface);border-radius:var(--radius);padding:14px 16px;}
+.stat-num{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;margin-bottom:4px;}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:500;}
+.stat-num.green{color:var(--green);} .stat-num.amber{color:var(--amber);} .stat-num.red{color:var(--red);} .stat-num.purple{color:var(--purple);}
+
+/* CARD */
+.card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.card-title{font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:12px;}
+
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-month{font-size:15px;font-weight:700;}
+.cal-btn{width:32px;height:32px;border:1px solid var(--border);background:var(--bg);border-radius:var(--radius-sm);font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;}
+.cal-hd{text-align:center;font-size:10px;font-weight:700;color:var(--text-faint);padding:4px 0 6px;}
+.cal-day{min-height:52px;padding:4px 3px;border-radius:6px;}
+.cal-day.other{opacity:.3;} .cal-day.today{background:var(--accent-light);}
+.day-num{font-size:11px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:2px;text-align:center;}
+.cal-day.today .day-num{color:var(--accent);}
+.cal-dot{display:block;font-size:9px;border-radius:3px;padding:1px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+.cal-dot.active{background:var(--green-light);color:var(--green);}
+.cal-dot.expiring{background:var(--amber-light);color:var(--amber);}
+.cal-dot.expired{background:var(--red-light);color:var(--red);}
+.cal-dot.holding{background:var(--purple-light);color:var(--purple);}
+.cal-dot.pending{background:var(--blue-light);color:var(--blue);}
+
+/* MEMBER LIST */
+.member-list{display:flex;flex-direction:column;gap:8px;}
+.member-card{background:var(--surface);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:opacity .1s;}
+.member-card:active{opacity:.7;}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;}
+.av-0{background:#e8edf8;color:#3a5bbf;} .av-1{background:var(--green-light);color:var(--green);}
+.av-2{background:var(--amber-light);color:var(--amber);} .av-3{background:#f0e8f4;color:#7a3da8;}
+.av-4{background:var(--accent-light);color:var(--accent);}
+.member-info{flex:1;min-width:0;}
+.member-name{font-size:14px;font-weight:700;margin-bottom:2px;}
+.member-meta{font-size:11px;color:var(--text-muted);line-height:1.5;}
+.badge-row{display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0;}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-green{background:var(--green-light);color:var(--green);}
+.badge-amber{background:var(--amber-light);color:var(--amber);}
+.badge-red{background:var(--red-light);color:var(--red);}
+.badge-purple{background:var(--purple-light);color:var(--purple);}
+.badge-blue{background:var(--blue-light);color:var(--blue);}
+.badge-gray{background:var(--bg);color:var(--text-muted);}
+
+/* SEARCH / FILTER */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+.search-wrap input{padding-left:36px!important;}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;}
+.filter-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;}
+.filter-chip.on{background:var(--accent);border-color:var(--accent);color:white;}
+
+/* FORM */
+.form-section{margin-bottom:20px;}
+.form-section-title{font-size:11px;font-weight:700;color:var(--text-faint);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;}
+.form-group{margin-bottom:12px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:5px;}
+input,select{width:100%;padding:12px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;}
+input:focus,select:focus{outline:none;border-color:var(--accent);}
+.expire-box{background:var(--green-light);border:1.5px solid #b4dcc6;border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--green);display:none;align-items:center;gap:8px;margin-top:8px;}
+.expire-box.show{display:flex;}
+.expire-box strong{font-weight:700;font-size:15px;}
+
+/* HOLDING */
+.holding-date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.holding-item{background:var(--purple-light);border-radius:var(--radius-sm);padding:10px 12px;display:flex;justify-content:space-between;align-items:center;}
+.holding-item-info{font-size:12px;color:var(--purple);font-weight:600;}
+.holding-item-days{font-size:11px;color:var(--purple);opacity:.7;}
+.holding-delete{background:none;border:none;color:var(--purple);font-size:16px;cursor:pointer;padding:0 4px;}
+
+/* BUTTONS */
+.btn{padding:13px 20px;font-size:14px;font-weight:700;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:opacity .1s;width:100%;}
+.btn:active{opacity:.75;}
+.btn-primary{background:var(--accent);color:white;}
+.btn-secondary{background:var(--bg);color:var(--text);}
+.btn-danger{background:var(--red-light);color:var(--red);}
+.btn-purple{background:var(--purple-light);color:var(--purple);}
+.btn-green{background:var(--green-light);color:var(--green);}
+.btn-blue{background:var(--blue-light);color:var(--blue);}
+
+/* TABBAR */
+.tabbar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text-faint);font-family:inherit;padding:0;transition:color .15s;}
+.tab-item.active{color:var(--accent);}
+.tab-icon{font-size:22px;line-height:1;}
+.tab-label{font-size:10px;font-weight:600;}
+
+/* SHEET */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;}
+.sheet-overlay.open{display:flex;}
+.sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);animation:slideUp .25s ease-out;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:12px auto 16px;}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:0 16px 14px;border-bottom:1px solid var(--border);}
+.sheet-title{font-size:16px;font-weight:700;}
+.sheet-close{width:30px;height:30px;border:none;background:var(--bg);border-radius:50%;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.sheet-body{padding:16px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-key{color:var(--text-muted);}
+.info-val{font-weight:600;text-align:right;}
+
+/* MY PAGE */
+.my-pass-tabs{display:flex;background:var(--bg);border-radius:var(--radius-sm);padding:3px;margin-bottom:14px;}
+.my-pass-tab{flex:1;padding:8px;text-align:center;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;color:var(--text-muted);border:none;background:none;font-family:inherit;transition:all .15s;}
+.my-pass-tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.pass-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;margin-bottom:12px;}
+.pass-hero{padding:20px;color:white;}
+.pass-hero.active-bg{background:linear-gradient(135deg,var(--accent) 0%,#b83a1f 100%);}
+.pass-hero.pending-bg{background:linear-gradient(135deg,var(--blue) 0%,#0d3b8a 100%);}
+.pass-hero.expired-bg{background:linear-gradient(135deg,#888 0%,#555 100%);}
+.pass-hero.holding-bg{background:linear-gradient(135deg,var(--purple) 0%,#4a1e8a 100%);}
+.pass-hero-name{font-size:13px;opacity:.85;margin-bottom:4px;}
+.pass-hero-type{font-size:18px;font-weight:800;margin-bottom:8px;}
+.pass-dday{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.pass-dday-label{font-size:11px;opacity:.75;margin-top:2px;}
+.progress-bar{background:rgba(255,255,255,.25);border-radius:4px;height:5px;margin-top:14px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:4px;background:white;transition:width .5s;}
+.pass-info{padding:0 16px;}
+.pass-info .info-row:last-child{border-bottom:none;}
+
+/* ATTENDANCE */
+.att-pass-card{background:var(--bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;}
+.att-count-row{display:flex;align-items:center;justify-content:space-between;margin:12px 0;}
+.att-count-num{font-size:36px;font-weight:800;letter-spacing:-1px;color:var(--green);}
+.att-count-label{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.att-btn-row{display:flex;gap:8px;}
+.att-btn{flex:1;padding:11px;font-size:13px;font-weight:700;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:inherit;transition:opacity .1s;}
+.att-btn:active{opacity:.75;}
+.att-btn-minus{background:var(--accent);color:white;}
+.att-btn-plus{background:var(--green-light);color:var(--green);}
+.att-btn-edit{background:var(--bg);color:var(--text-muted);border:1px solid var(--border);}
+.count-bar{background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-top:10px;}
+.count-fill{height:100%;border-radius:4px;background:var(--green);transition:width .4s;}
+
+/* TOAST / EMPTY */
+.empty{text-align:center;padding:48px 24px;color:var(--text-faint);}
+.empty-icon{font-size:40px;margin-bottom:10px;}
+.toast{position:fixed;bottom:calc(var(--tab-h)+12px);left:50%;transform:translateX(-50%);background:var(--text);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-inner">
+    <div class="login-logo">🏋</div>
+    <div class="login-title">크로스핏 스트릿캣</div>
+    <div class="login-sub">로그인하여 회원권을 확인하세요</div>
+    <div class="login-card">
+      <div class="login-tabs">
+        <button class="login-tab on" id="ltab-member" onclick="switchLoginTab('member')">회원</button>
+        <button class="login-tab" id="ltab-admin" onclick="switchLoginTab('admin')">관리자</button>
+      </div>
+      <div id="login-member-form">
+        <div class="form-group"><label>이름</label><input type="text" id="l-name" placeholder="홍길동"></div>
+        <div class="form-group"><label>연락처 뒷 4자리</label><input type="tel" id="l-phone" placeholder="1234" maxlength="4" inputmode="numeric"></div>
+        <button class="btn btn-primary" onclick="memberLogin()">로그인</button>
+      </div>
+      <div id="login-admin-form" style="display:none;">
+        <div class="form-group"><label>비밀번호</label><input type="password" id="l-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+        <button class="btn btn-primary" onclick="adminLogin()">관리자 로그인</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+  <header class="header">
+    <div class="logo"><div class="logo-icon">🏋</div>크로스핏 스트릿캣</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:11px;color:var(--text-faint);display:flex;align-items:center;gap:4px;">
+        <div class="sync-dot" id="sync-dot"></div><span id="sync-text">연결중</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:600;display:flex;align-items:center;gap:8px;">
+        <span id="header-username"></span>
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="scroll-area" id="scroll-area">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="section">
+      <div class="stats" id="stats"></div>
+      <div class="card">
+        <div class="cal-nav">
+          <button class="cal-btn" onclick="changeMonth(-1)">‹</button>
+          <div class="cal-month" id="cal-title"></div>
+          <button class="cal-btn" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="card-title" style="margin-top:4px;">만료 예정 회원</div>
+      <div id="expiring-list" class="member-list"></div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div id="tab-members" class="section">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="이름 또는 연락처 검색" oninput="renderMembers()">
+      </div>
+      <div class="filter-row">
+        <button class="filter-chip on" onclick="setFilter(this,'')">전체</button>
+        <button class="filter-chip" onclick="setFilter(this,'active')">✅ 유효</button>
+        <button class="filter-chip" onclick="setFilter(this,'expiring')">⚠️ 임박</button>
+        <button class="filter-chip" onclick="setFilter(this,'expired')">❌ 만료</button>
+        <button class="filter-chip" onclick="setFilter(this,'holding')">⏸ 홀딩</button>
+        <button class="filter-chip" onclick="setFilter(this,'pending')">🕐 예정</button>
+      </div>
+      <div id="member-list" class="member-list"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="tab-register" class="section">
+      <div class="card">
+        <div class="form-section">
+          <div class="form-section-title">기본 정보</div>
+          <div class="form-group"><label>이름 *</label><input type="text" id="f-name" placeholder="홍길동"></div>
+          <div class="form-group"><label>연락처 *</label><input type="tel" id="f-phone" placeholder="010-0000-0000"></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">회원권 정보</div>
+          <div class="form-group"><label>결제일 *</label><input type="date" id="f-start" onchange="calcExpire()"></div>
+          <div class="form-group"><label>시작일 <span style="font-weight:400;color:var(--text-faint);">(결제일과 다를 경우)</span></label><input type="date" id="f-startdate" onchange="calcExpire()"></div>
+          <div class="form-group">
+            <label>회원권 종류 *</label>
+            <select id="f-type" onchange="calcExpire()">
+              <option value="">선택하세요</option>
+              <option value="1개월">1개월</option><option value="3개월">3개월</option>
+              <option value="6개월">6개월</option><option value="12개월">12개월</option>
+              <option value="1일">1일 (데이패스)</option><option value="10회">10회권</option>
+            </select>
+          </div>
+          <div class="form-group"><label>금액 (원) *</label><input type="number" id="f-price" placeholder="150000" min="0" inputmode="numeric"></div>
+          <div class="form-group">
+            <label>결제 방법</label>
+            <select id="f-payment"><option value="카드">카드</option><option value="현금">현금</option><option value="계좌이체">계좌이체</option></select>
+          </div>
+          <div class="form-group"><label>만료일 직접 설정 <span style="font-weight:400;color:var(--text-faint);">(관리자 조정용)</span></label><input type="date" id="f-custom-expire" onchange="calcExpire()"></div>
+          <div class="expire-box" id="expire-box">📅 만료일 &nbsp;<strong id="expire-val"></strong></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">기타</div>
+          <div class="form-group"><label>메모</label><input type="text" id="f-memo" placeholder="특이사항 입력..."></div>
+        </div>
+        <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);font-weight:600;">
+          💡 기존 회원에게 회원권을 추가하려면 회원 목록에서 해당 회원 → 회원권 추가 버튼을 이용하세요.
+        </div>
+        <button class="btn btn-primary" onclick="saveMember()">💾 신규 회원 등록</button>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="tab-admin" class="section">
+      <!-- 횟수권 출석 관리 -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">🥊 횟수권 출석 체크 <span style="font-size:10px;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:20px;font-weight:700;margin-left:4px;">관리자 전용</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">출석 시 1회 차감하거나 남은 횟수를 직접 수정합니다.</div>
+        <div class="form-group"><label>회원 선택</label>
+          <select id="att-member-select" onchange="attMemberSelected()"><option value="">회원을 선택하세요</option></select>
+        </div>
+        <div id="att-pass-list" style="display:none;"></div>
+      </div>
+        <div class="card-title">⏸ 수동 홀딩 추가 <span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:2px 7px;border-radius:20px;font-weight:700;margin-left:4px;">관리자 전용</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">홀딩 한도 제한 없이 특정 회원권에 홀딩 기간을 추가합니다.</div>
+        <div class="form-group"><label>회원 선택</label>
+          <select id="admin-member-select" onchange="adminMemberSelected()"><option value="">회원을 선택하세요</option></select>
+        </div>
+        <div class="form-group" id="admin-pass-select-wrap" style="display:none;"><label>회원권 선택</label>
+          <select id="admin-pass-select" onchange="adminPassSelected()"><option value="">회원권을 선택하세요</option></select>
+        </div>
+        <div id="admin-member-info" style="display:none;background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;font-size:13px;"></div>
+        <div class="holding-date-row">
+          <div class="form-group" style="margin-bottom:0;"><label>시작일</label><input type="date" id="admin-h-start" style="font-size:13px;padding:9px 10px;" onchange="adminPreviewDays()"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>종료일</label><input type="date" id="admin-h-end" style="font-size:13px;padding:9px 10px;" onchange="adminPreviewDays()"></div>
+        </div>
+        <div id="admin-days-preview" style="font-size:12px;color:var(--purple);margin-top:8px;font-weight:600;min-height:18px;"></div>
+        <div class="form-group" style="margin-top:12px;"><label>사유 (선택)</label><input type="text" id="admin-h-reason" placeholder="예: 부상, 출장..."></div>
+        <div class="expire-box" id="admin-expire-box" style="margin-top:4px;">⏰ 적용 후 만료일: &nbsp;<strong id="admin-expire-val"></strong></div>
+        <button class="btn btn-purple" style="margin-top:14px;" onclick="adminAddHolding()">⏸ 홀딩 강제 추가</button>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title">📋 전체 홀딩 내역 관리</div>
+        <div id="admin-all-holding-list"></div>
+      </div>
+    </div>
+
+    <!-- MY -->
+    <div id="tab-my" class="section active">
+      <div id="my-content"></div>
+    </div>
+
+  </div>
+
+  <!-- ADMIN TABBAR -->
+  <nav class="tabbar" id="tabbar-admin" style="display:none;">
+    <button class="tab-item" id="tabn-dashboard" onclick="switchTab('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">메인</div></button>
+    <button class="tab-item" id="tabn-members" onclick="switchTab('members')"><div class="tab-icon">👥</div><div class="tab-label">회원</div></button>
+    <button class="tab-item" id="tabn-register" onclick="switchTab('register')"><div class="tab-icon">➕</div><div class="tab-label">등록</div></button>
+    <button class="tab-item" id="tabn-admin" onclick="switchTab('admin')"><div class="tab-icon">🔐</div><div class="tab-label">관리자</div></button>
+  </nav>
+  <!-- MEMBER TABBAR -->
+  <nav class="tabbar" id="tabbar-member" style="display:none;">
+    <button class="tab-item active" id="tabn-my" onclick="switchTab('my')"><div class="tab-icon">🪪</div><div class="tab-label">내 회원권</div></button>
+  </nav>
+</div>
+
+<!-- ── SHEETS ── -->
+
+<!-- MEMBER CARD SHEET -->
+<div class="sheet-overlay" id="card-sheet" onclick="handleSheetOverlay(event,'card-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="cs-avatar" class="avatar"></div>
+        <div><div id="cs-name" style="font-size:16px;font-weight:800;"></div><div id="cs-badges" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;"></div></div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet('card-sheet')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div id="cs-passes"></div>
+      <div id="cs-history-wrap" style="display:none;margin-top:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">📋 히스토리</div>
+        <div id="cs-history-list"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-blue" onclick="openAddPassSheet()">➕ 회원권 추가</button>
+        <button class="btn btn-primary" onclick="openEditFromCard()">✏️ 회원 정보 수정</button>
+        <button class="btn btn-secondary" onclick="closeSheet('card-sheet')">닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MEMBER SHEET -->
+<div class="sheet-overlay" id="edit-sheet" onclick="handleSheetOverlay(event,'edit-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">회원 정보 수정</div><button class="sheet-close" onclick="closeSheet('edit-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="form-group"><label>이름</label><input type="text" id="m-name"></div>
+      <div class="form-group"><label>연락처</label><input type="tel" id="m-phone"></div>
+      <div class="form-group"><label>메모</label><input type="text" id="m-memo"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-primary" onclick="updateMember()">저장</button>
+        <button class="btn btn-danger" onclick="deleteMember()">🗑 회원 삭제</button>
+        <button class="btn btn-secondary" onclick="closeSheet('edit-sheet')">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT PASS SHEET -->
+<div class="sheet-overlay" id="pass-sheet" onclick="handleSheetOverlay(event,'pass-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title" id="pass-sheet-title">회원권 추가</div><button class="sheet-close" onclick="closeSheet('pass-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div class="form-group"><label>결제일 *</label><input type="date" id="ps-start" onchange="psCalcExpire()"></div>
+      <div class="form-group"><label>시작일 <span style="font-weight:400;color:var(--text-faint);">(결제일과 다를 경우)</span></label><input type="date" id="ps-startdate" onchange="psCalcExpire()"></div>
+      <div class="form-group">
+        <label>회원권 종류 *</label>
+        <select id="ps-type" onchange="psCalcExpire()">
+          <option value="">선택하세요</option>
+          <option value="1개월">1개월</option><option value="3개월">3개월</option>
+          <option value="6개월">6개월</option><option value="12개월">12개월</option>
+          <option value="1일">1일 (데이패스)</option><option value="10회">10회권</option>
+        </select>
+      </div>
+      <div class="form-group"><label>금액 (원) *</label><input type="number" id="ps-price" min="0" inputmode="numeric" placeholder="150000"></div>
+      <div class="form-group">
+        <label>결제 방법</label>
+        <select id="ps-payment"><option value="카드">카드</option><option value="현금">현금</option><option value="계좌이체">계좌이체</option></select>
+      </div>
+      <div class="form-group"><label>만료일 직접 설정 <span style="font-weight:400;color:var(--text-faint);">(비우면 자동계산)</span></label><input type="date" id="ps-custom-expire" onchange="psCalcExpire()"></div>
+      <div class="expire-box" id="ps-expire-box">📅 만료일 &nbsp;<strong id="ps-expire-val"></strong></div>
+      <div class="form-group" style="margin-top:12px;"><label>메모</label><input type="text" id="ps-memo" placeholder="특이사항..."></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+        <button class="btn btn-primary" id="ps-save-btn" onclick="savePass()">저장</button>
+        <button class="btn btn-danger" id="ps-delete-btn" onclick="deletePass()" style="display:none;">🗑 이 회원권 삭제</button>
+        <button class="btn btn-secondary" onclick="closeSheet('pass-sheet')">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOLDING SHEET (관리자용) -->
+<div class="sheet-overlay" id="holding-sheet" onclick="handleSheetOverlay(event,'holding-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">⏸ 홀딩 관리</div><button class="sheet-close" onclick="closeSheet('holding-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div id="holding-existing-list" style="margin-bottom:16px;"></div>
+      <div style="background:var(--purple-light);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:10px;">새 홀딩 추가</div>
+        <div class="holding-date-row">
+          <div class="form-group" style="margin-bottom:0;"><label>시작일</label><input type="date" id="h-start" style="font-size:13px;padding:9px 10px;" onchange="previewHoldingDays()"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>종료일</label><input type="date" id="h-end" style="font-size:13px;padding:9px 10px;" onchange="previewHoldingDays()"></div>
+        </div>
+        <div id="holding-days-preview" style="font-size:12px;color:var(--purple);margin-top:8px;font-weight:600;min-height:18px;"></div>
+        <button style="width:100%;margin-top:10px;padding:10px;border:1.5px dashed var(--purple);background:none;border-radius:var(--radius-sm);color:var(--purple);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;" onclick="addHolding()">+ 홀딩 추가</button>
+      </div>
+      <div class="expire-box show" id="holding-expire-box" style="background:var(--purple-light);border-color:#c9a8f0;color:var(--purple);">⏰ 적용 후 만료일: &nbsp;<strong id="holding-expire-val"></strong></div>
+      <div style="margin-top:16px;"><button class="btn btn-primary" onclick="saveHolding()">저장</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MY HOLDING SHEET (회원용) -->
+<div class="sheet-overlay" id="my-holding-sheet" onclick="handleSheetOverlay(event,'my-holding-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">⏸ 홀딩 신청</div><button class="sheet-close" onclick="closeSheet('my-holding-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div id="my-holding-info" style="background:var(--purple-light);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:13px;color:var(--purple);"></div>
+      <div id="my-holding-existing" style="margin-bottom:16px;"></div>
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">새 홀딩 신청</div>
+        <div class="holding-date-row">
+          <div class="form-group" style="margin-bottom:0;"><label>시작일</label><input type="date" id="my-h-start" style="font-size:13px;padding:9px 10px;" onchange="myPreviewDays()"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>종료일</label><input type="date" id="my-h-end" style="font-size:13px;padding:9px 10px;" onchange="myPreviewDays()"></div>
+        </div>
+        <div id="my-days-preview" style="font-size:12px;margin-top:8px;font-weight:600;min-height:18px;"></div>
+      </div>
+      <button class="btn btn-purple" onclick="myAddHolding()">⏸ 홀딩 신청</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOLDING EDIT SHEET -->
+<div class="sheet-overlay" id="holding-edit-sheet" onclick="handleSheetOverlay(event,'holding-edit-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">✏️ 홀딩 수정</div><button class="sheet-close" onclick="closeSheet('holding-edit-sheet')">✕</button></div>
+    <div class="sheet-body">
+      <div id="holding-edit-member-info" style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
+      <div class="holding-date-row">
+        <div class="form-group" style="margin-bottom:0;"><label>시작일</label><input type="date" id="he-start" style="font-size:13px;padding:9px 10px;" onchange="hePreviewDays()"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>종료일</label><input type="date" id="he-end" style="font-size:13px;padding:9px 10px;" onchange="hePreviewDays()"></div>
+      </div>
+      <div id="he-days-preview" style="font-size:12px;color:var(--purple);margin-top:8px;font-weight:600;min-height:18px;"></div>
+      <div class="form-group" style="margin-top:12px;"><label>사유</label><input type="text" id="he-reason"></div>
+      <div class="expire-box" id="he-expire-box" style="margin-top:4px;">⏰ 수정 후 만료일: &nbsp;<strong id="he-expire-val"></strong></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+        <button class="btn btn-primary" onclick="saveHoldingEdit()">저장</button>
+        <button class="btn btn-danger" onclick="deleteHoldingEntry()">🗑 이 홀딩 삭제</button>
+        <button class="btn btn-secondary" onclick="closeSheet('holding-edit-sheet')">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyAVBFGSWUlXy2S5J0Mv7AkL0xkTjMuZ6d4",
+  authDomain:"streetcat-memebers.firebaseapp.com",
+  projectId:"streetcat-memebers",
+  storageBucket:"streetcat-memebers.firebasestorage.app",
+  messagingSenderId:"206209076069",
+  appId:"1:206209076069:web:a33698ba466869561faf8c"
+};
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+const col=collection(db,'members');
+
+/* ── CONSTANTS ── */
+const TYPE_DAYS={'1개월':30,'3개월':90,'6개월':180,'12개월':365,'1일':1,'10회':30};
+const HOLDING_LIMIT={'3개월':7,'6개월':14,'12개월':14};
+const ADMIN_PW_KEY='cf-admin-pw';
+
+/* ── STATE ── */
+let members=[], filterStatus='', editingId=null, cardId=null;
+let calViewY, calViewM, pendingHoldings=[];
+let currentUser=null;
+// pass editing state: {memberId, passIdx} or null for new
+let editingPass=null;
+let holdingTarget=null; // {memberId, passIdx}
+let holdingEditTarget=null;
+let myHoldingTarget=null; // {passIdx}
+let adminHoldingTarget=null; // {memberId, passIdx}
+
+/* ── DATA HELPERS ── */
+// 회원의 passes 배열 반환 (구버전 단일 회원권 마이그레이션 포함)
+function getPasses(m){
+  if(m.passes&&m.passes.length) return m.passes;
+  // 구버전: 단일 필드를 passes[0]으로 변환
+  if(m.type&&m.start){
+    return [{
+      id:0, type:m.type, start:m.start, startDate:m.startDate||null,
+      price:m.price||0, payment:m.payment||'카드', memo:m.memo||'',
+      customExpire:m.customExpire||null, holdings:m.holdings||[]
+    }];
+  }
+  return [];
+}
+
+function passExpireDate(p){
+  if(p.customExpire) return new Date(p.customExpire);
+  const base=p.startDate||p.start;
+  const d=new Date(base);
+  d.setDate(d.getDate()+(TYPE_DAYS[p.type]||30)+totalHoldingDays(p.holdings||[]));
+  return d;
+}
+
+function totalHoldingDays(h=[]){
+  return h.reduce((s,x)=>{
+    if(!x.start||!x.end) return s;
+    return s+Math.max(0,Math.ceil((new Date(x.end)-new Date(x.start))/86400000)+1);
+  },0);
+}
+
+function isPassHolding(p){
+  if(!p.holdings?.length) return false;
+  const t=new Date().toISOString().split('T')[0];
+  return p.holdings.some(h=>h.start<=t&&h.end>=t);
+}
+
+function passStatus(p){
+  const today=new Date().toISOString().split('T')[0];
+  const startDate=p.startDate||p.start;
+  if(startDate>today) return 'pending';       // 아직 시작 안 함
+  if(isPassHolding(p)) return 'holding';
+  const diff=Math.ceil((passExpireDate(p)-now0())/86400000);
+  return diff<0?'expired':diff<=7?'expiring':'active';
+}
+
+// 회원의 대표 상태: 가장 중요한 활성 회원권 기준
+function memberStatus(m){
+  const passes=getPasses(m);
+  if(!passes.length) return 'expired';
+  const priority=['holding','active','expiring','pending','expired'];
+  const statuses=passes.map(p=>passStatus(p));
+  for(const s of priority) if(statuses.includes(s)) return s;
+  return 'expired';
+}
+
+// 회원의 대표 만료일 (활성/예정 중 가장 마지막)
+function memberExpireDate(m){
+  const passes=getPasses(m);
+  if(!passes.length) return new Date(0);
+  const active=passes.filter(p=>passStatus(p)!=='expired');
+  const pool=active.length?active:passes;
+  return pool.reduce((max,p)=>{const e=passExpireDate(p);return e>max?e:max;},new Date(0));
+}
+
+function holdingLimit(type){return HOLDING_LIMIT[type]||0;}
+function holdingRemain(type,holdings){return Math.max(0,holdingLimit(type)-totalHoldingDays(holdings));}
+function now0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function fmtDate(d){const dt=typeof d==='string'?new Date(d):d;return`${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;}
+function fmtPrice(p){return Number(p).toLocaleString()+'원';}
+function initials(n){return n?n.slice(0,2):'?';}
+function avClass(n){return 'av-'+(n.charCodeAt(0)%5);}
+function getAdminPw(){return '2010';}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+function passBadgeHtml(p){
+  const s=passStatus(p);
+  const diff=Math.ceil((passExpireDate(p)-now0())/86400000);
+  if(s==='holding') return`<span class="badge badge-purple">⏸ 홀딩중</span>`;
+  if(s==='pending') return`<span class="badge badge-blue">🕐 예정</span>`;
+  if(s==='expired') return`<span class="badge badge-gray">만료됨</span>`;
+  if(s==='expiring')return`<span class="badge badge-amber">D-${diff} 임박</span>`;
+  return`<span class="badge badge-green">D-${diff}</span>`;
+}
+function memberBadgesHtml(m){
+  const passes=getPasses(m);
+  return passes.map(p=>passBadgeHtml(p)).join(' ');
+}
+
+/* ── FIREBASE ── */
+onSnapshot(col,snap=>{
+  members=snap.docs.map(d=>({id:d.id,...d.data()}));
+  setSyncLive(true);
+  if(!currentUser) showLoginScreen();
+  else refreshCurrent();
+},err=>{setSyncLive(false);showToast('연결 실패: '+err.message);});
+
+function setSyncLive(live){
+  document.getElementById('sync-dot').className='sync-dot'+(live?' live':'');
+  document.getElementById('sync-text').textContent=live?'실시간':'오프라인';
+}
+function refreshCurrent(){
+  const a=document.querySelector('.section.active')?.id;
+  if(a==='tab-dashboard')renderDashboard();
+  else if(a==='tab-members')renderMembers();
+  else if(a==='tab-my')renderMyTab();
+  else if(a==='tab-admin'){renderAdminMemberSelect();renderAdminAllHoldingList();renderAdminAttMemberSelect();
+    // 출석 카드 선택된 상태면 갱신
+    const selId=document.getElementById('att-member-select')?.value;
+    if(selId) window.attMemberSelected();
+  }
+}
+
+/* ── LOGIN ── */
+function showLoginScreen(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function showApp(user){
+  currentUser=user;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if(user.type==='admin'){
+    document.getElementById('header-username').textContent='관리자';
+    document.getElementById('tabbar-admin').style.display='flex';
+    document.getElementById('tabbar-member').style.display='none';
+    switchTab('dashboard');
+  } else {
+    document.getElementById('header-username').textContent=user.name;
+    document.getElementById('tabbar-admin').style.display='none';
+    document.getElementById('tabbar-member').style.display='flex';
+    switchTab('my');
+  }
+}
+window.switchLoginTab=function(tab){
+  document.getElementById('login-member-form').style.display=tab==='member'?'':'none';
+  document.getElementById('login-admin-form').style.display=tab==='admin'?'':'none';
+  document.getElementById('ltab-member').className='login-tab'+(tab==='member'?' on':'');
+  document.getElementById('ltab-admin').className='login-tab'+(tab==='admin'?' on':'');
+};
+window.memberLogin=function(){
+  const name=document.getElementById('l-name').value.trim();
+  const phone=document.getElementById('l-phone').value.trim();
+  if(!name||!phone){showToast('이름과 연락처 뒷 4자리를 입력해주세요');return;}
+  if(phone.length!==4||!/^\d+$/.test(phone)){showToast('연락처 뒷 4자리 숫자를 입력해주세요');return;}
+  if(!members.length){showToast('데이터 로딩 중입니다. 잠시 후 다시 시도해주세요');return;}
+  const m=members.find(x=>x.name===name&&x.phone.replace(/-/g,'').slice(-4)===phone);
+  if(!m){showToast('일치하는 회원 정보가 없습니다');return;}
+  showApp({type:'member',memberId:m.id,name:m.name});
+};
+window.adminLogin=function(){
+  const pw=document.getElementById('l-pw').value;
+  if(pw!==getAdminPw()){showToast('비밀번호가 틀렸습니다');document.getElementById('l-pw').value='';return;}
+  if(!members.length){showToast('데이터 로딩 중입니다. 잠시 후 다시 시도해주세요');return;}
+  showApp({type:'admin'});
+};
+window.logout=function(){
+  currentUser=null;
+  document.getElementById('l-pw').value='';
+  document.getElementById('l-name').value='';
+  document.getElementById('l-phone').value='';
+  showLoginScreen();
+};
+
+/* ── TABS ── */
+window.switchTab=function(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const btn=document.getElementById('tabn-'+id);
+  if(btn)btn.classList.add('active');
+  document.getElementById('scroll-area').scrollTop=0;
+  if(id==='dashboard')renderDashboard();
+  if(id==='members')renderMembers();
+  if(id==='register')resetForm();
+  if(id==='my')renderMyTab();
+  if(id==='admin'){renderAdminMemberSelect();renderAdminAllHoldingList();renderAdminAttMemberSelect();}
+};
+
+/* ── DASHBOARD ── */
+function renderDashboard(){
+  const all=members.length;
+  const active=members.filter(m=>memberStatus(m)==='active').length;
+  const expiredOrExpiring=members.filter(m=>['expired','expiring'].includes(memberStatus(m))).length;
+  const holding=members.filter(m=>memberStatus(m)==='holding').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-num">${all}</div><div class="stat-label">전체 회원</div></div>
+    <div class="stat"><div class="stat-num green">${active}</div><div class="stat-label">유효 회원</div></div>
+    <div class="stat"><div class="stat-num amber">${expiredOrExpiring}</div><div class="stat-label">만료/임박</div></div>
+    <div class="stat"><div class="stat-num purple">${holding}</div><div class="stat-label">홀딩중</div></div>`;
+  renderCalendar();renderExpiringList();
+}
+
+function renderCalendar(){
+  const now=new Date();
+  if(calViewY===undefined){calViewY=now.getFullYear();calViewM=now.getMonth();}
+  document.getElementById('cal-title').textContent=`${calViewY}년 ${calViewM+1}월`;
+  const first=new Date(calViewY,calViewM,1),last=new Date(calViewY,calViewM+1,0);
+  let html=['일','월','화','수','목','금','토'].map(d=>`<div class="cal-hd">${d}</div>`).join('');
+  for(let i=0;i<first.getDay();i++){
+    const pd=new Date(calViewY,calViewM,-first.getDay()+i+1);
+    html+=`<div class="cal-day other"><span class="day-num">${pd.getDate()}</span></div>`;
+  }
+  for(let d=1;d<=last.getDate();d++){
+    const dt=new Date(calViewY,calViewM,d),isToday=dt.toDateString()===now.toDateString();
+    // 각 회원의 각 pass 만료일 표시
+    const dots=[];
+    members.forEach(m=>{
+      getPasses(m).forEach(p=>{
+        const e=passExpireDate(p);
+        if(e.getFullYear()===calViewY&&e.getMonth()===calViewM&&e.getDate()===d){
+          const s=passStatus(p);
+          dots.push(`<span class="cal-dot ${s}" onclick="openCardSheet('${m.id}')">${m.name}(${p.type})</span>`);
+        }
+      });
+    });
+    html+=`<div class="cal-day${isToday?' today':''}"><span class="day-num">${d}</span>${dots.join('')}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+window.changeMonth=function(dir){
+  calViewM+=dir;
+  if(calViewM>11){calViewM=0;calViewY++;}
+  if(calViewM<0){calViewM=11;calViewY--;}
+  renderCalendar();
+};
+
+function renderExpiringList(){
+  const items=[];
+  members.forEach(m=>{
+    getPasses(m).filter(p=>{
+      const s=passStatus(p);
+      if(s==='expired'||s==='pending') return false;
+      const diff=Math.ceil((passExpireDate(p)-now0())/86400000);
+      return diff<=14;
+    }).forEach(p=>items.push({m,p}));
+  });
+  items.sort((a,b)=>passExpireDate(a.p)-passExpireDate(b.p));
+  const el=document.getElementById('expiring-list');
+  if(!items.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div>만료 예정 회원 없음</div>';return;}
+  el.innerHTML=items.map(({m,p})=>`
+    <div class="member-card" onclick="openCardSheet('${m.id}')">
+      <div class="avatar ${avClass(m.name)}">${initials(m.name)}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}</div>
+        <div class="member-meta">${m.phone} · ${p.type} · ${fmtPrice(p.price)}</div>
+        <div class="member-meta">만료 ${fmtDate(passExpireDate(p))}</div>
+      </div>
+      <div class="badge-row">${passBadgeHtml(p)}</div>
+    </div>`).join('');
+}
+
+/* ── MEMBERS ── */
+window.setFilter=function(btn,val){
+  filterStatus=val;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');renderMembers();
+};
+function renderMembers(){
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase();
+  let list=members.filter(m=>{
+    const matchQ=!q||m.name.includes(q)||(m.phone||'').includes(q);
+    const matchS=!filterStatus||getPasses(m).some(p=>passStatus(p)===filterStatus);
+    return matchQ&&matchS;
+  }).sort((a,b)=>memberExpireDate(a)-memberExpireDate(b));
+  const el=document.getElementById('member-list');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div>검색 결과가 없습니다</div>';return;}
+  el.innerHTML=list.map(m=>{
+    const passes=getPasses(m);
+    const passInfo=passes.map(p=>`<div class="member-meta">${p.type} · ${fmtPrice(p.price)} · 만료 ${fmtDate(passExpireDate(p))}</div>`).join('');
+    return`<div class="member-card" onclick="openCardSheet('${m.id}')">
+      <div class="avatar ${avClass(m.name)}">${initials(m.name)}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}</div>
+        <div class="member-meta">${m.phone}</div>
+        ${passInfo}
+      </div>
+      <div class="badge-row">${memberBadgesHtml(m)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── CARD SHEET ── */
+window.openCardSheet=function(id){
+  const m=members.find(x=>x.id===id);if(!m)return;cardId=id;
+  const av=document.getElementById('cs-avatar');
+  av.className=`avatar ${avClass(m.name)}`;av.textContent=initials(m.name);
+  document.getElementById('cs-name').textContent=m.name;
+  document.getElementById('cs-badges').innerHTML=memberBadgesHtml(m);
+  // passes 표시
+  const passes=getPasses(m);
+  document.getElementById('cs-passes').innerHTML=passes.map((p,i)=>{
+    const s=passStatus(p);
+    const holdings=p.holdings||[];
+    const holdingHtml=holdings.length?`
+      <div style="background:var(--purple-light);border-radius:var(--radius-sm);padding:8px 10px;margin:8px 0;">
+        <div style="font-size:10px;font-weight:700;color:var(--purple);margin-bottom:4px;">⏸ 홀딩 내역</div>
+        ${holdings.map(h=>{const days=Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1;return`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--purple);padding:2px 0;">${fmtDate(h.start)}~${fmtDate(h.end)}<span>${days}일${h.isAdmin?' ★':''}</span></div>`;}).join('')}
+      </div>`:'';
+    return`<div style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:700;">${p.type}</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${passBadgeHtml(p)}
+          <button onclick="openPassEdit('${id}',${i})" style="font-size:11px;padding:3px 8px;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);color:var(--text-muted);cursor:pointer;">수정</button>
+          ${s==='active'||s==='holding'?`<button onclick="openHoldingSheet('${id}',${i})" style="font-size:11px;padding:3px 8px;border:1px solid var(--purple);border-radius:20px;background:var(--purple-light);color:var(--purple);cursor:pointer;">홀딩</button>`:''}
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);">결제일: ${fmtDate(p.start)}</div>
+      ${p.startDate&&p.startDate!==p.start?`<div style="font-size:12px;color:var(--text-muted);">시작일: ${fmtDate(p.startDate)}</div>`:''}
+      <div style="font-size:12px;color:var(--text-muted);">만료일: ${fmtDate(passExpireDate(p))}${p.customExpire?' (수동)':''}</div>
+      <div style="font-size:12px;color:var(--text-muted);">${fmtPrice(p.price)} · ${p.payment}</div>
+      ${p.memo?`<div style="font-size:11px;color:var(--text-faint);">📝 ${p.memo}</div>`:''}
+      ${holdingHtml}
+    </div>`;
+  }).join('');
+  // history
+  const history=m.history||[];
+  const hw=document.getElementById('cs-history-wrap');
+  if(history.length){
+    document.getElementById('cs-history-list').innerHTML=[...history].reverse().map(h=>`
+      <div style="padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+          <span style="font-weight:600;">${h.type}</span><span style="color:var(--text-muted);">${fmtPrice(h.price)}</span>
+        </div>
+        <div style="color:var(--text-faint);">${fmtDate(h.start)} ~ ${h.expire} · ${h.payment}</div>
+      </div>`).join('');
+    hw.style.display='';
+  } else hw.style.display='none';
+  openSheet('card-sheet');
+};
+
+window.openEditFromCard=function(){const id=cardId;closeSheet('card-sheet');openEditSheet(id);};
+window.openEditSheet=function(id){
+  const m=members.find(x=>x.id===id);if(!m)return;editingId=id;
+  document.getElementById('m-name').value=m.name;
+  document.getElementById('m-phone').value=m.phone;
+  document.getElementById('m-memo').value=m.memo||'';
+  openSheet('edit-sheet');
+};
+window.updateMember=async function(){
+  if(!editingId)return;
+  try{
+    await updateDoc(doc(db,'members',editingId),{
+      name:document.getElementById('m-name').value.trim(),
+      phone:document.getElementById('m-phone').value.trim(),
+      memo:document.getElementById('m-memo').value.trim()
+    });
+    closeSheet('edit-sheet');showToast('저장되었습니다 ✅');
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+window.deleteMember=async function(){
+  if(!editingId)return;
+  const m=members.find(x=>x.id===editingId);
+  if(!confirm(`${m?.name} 회원을 완전히 삭제하시겠습니까?`))return;
+  try{await deleteDoc(doc(db,'members',editingId));closeSheet('edit-sheet');showToast('삭제되었습니다');}
+  catch(e){showToast('삭제 실패: '+e.message);}
+};
+
+/* ── ADD / EDIT PASS ── */
+window.openAddPassSheet=function(){
+  editingPass=null;
+  document.getElementById('pass-sheet-title').textContent='회원권 추가';
+  document.getElementById('ps-save-btn').textContent='추가';
+  document.getElementById('ps-delete-btn').style.display='none';
+  const today=new Date().toISOString().split('T')[0];
+  ['ps-start','ps-startdate','ps-custom-expire','ps-memo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ps-start').value=today;
+  document.getElementById('ps-type').value='';
+  document.getElementById('ps-payment').value='카드';
+  document.getElementById('ps-expire-box').classList.remove('show');
+  closeSheet('card-sheet');openSheet('pass-sheet');
+};
+window.openPassEdit=function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=getPasses(m);
+  const p=passes[passIdx];if(!p)return;
+  editingPass={memberId,passIdx};cardId=memberId;
+  document.getElementById('pass-sheet-title').textContent='회원권 수정';
+  document.getElementById('ps-save-btn').textContent='저장';
+  document.getElementById('ps-delete-btn').style.display='';
+  document.getElementById('ps-start').value=p.start;
+  document.getElementById('ps-startdate').value=p.startDate||'';
+  document.getElementById('ps-type').value=p.type;
+  document.getElementById('ps-price').value=p.price;
+  document.getElementById('ps-payment').value=p.payment;
+  document.getElementById('ps-custom-expire').value=p.customExpire||'';
+  document.getElementById('ps-memo').value=p.memo||'';
+  psCalcExpire();
+  closeSheet('card-sheet');openSheet('pass-sheet');
+};
+window.psCalcExpire=function(){
+  const payDate=document.getElementById('ps-start').value;
+  const startDate=document.getElementById('ps-startdate').value;
+  const type=document.getElementById('ps-type').value;
+  const customExpire=document.getElementById('ps-custom-expire').value;
+  const box=document.getElementById('ps-expire-box');
+  const base=startDate||payDate;
+  if(customExpire){
+    document.getElementById('ps-expire-val').textContent=fmtDate(new Date(customExpire))+' (수동설정)';
+    box.classList.add('show');
+  } else if(base&&type){
+    document.getElementById('ps-expire-val').textContent=fmtDate(passExpireDate({start:base,type,holdings:[]}));
+    box.classList.add('show');
+  } else box.classList.remove('show');
+};
+window.savePass=async function(){
+  const start=document.getElementById('ps-start').value;
+  const startDate=document.getElementById('ps-startdate').value||null;
+  const type=document.getElementById('ps-type').value;
+  const price=document.getElementById('ps-price').value;
+  const customExpire=document.getElementById('ps-custom-expire').value||null;
+  if(!start||!type||!price){showToast('필수 항목을 모두 입력해주세요');return;}
+  const newPass={type,start,startDate,price:Number(price),
+    payment:document.getElementById('ps-payment').value,
+    memo:document.getElementById('ps-memo').value.trim(),
+    customExpire,holdings:[]};
+  const m=members.find(x=>x.id===cardId);if(!m)return;
+  const passes=[...getPasses(m)];
+  if(editingPass!==null){
+    // 수정: 기존 holdings 유지
+    newPass.holdings=passes[editingPass.passIdx].holdings||[];
+    passes[editingPass.passIdx]=newPass;
+  } else {
+    passes.push(newPass);
+  }
+  try{
+    await updateDoc(doc(db,'members',cardId),{passes});
+    closeSheet('pass-sheet');showToast(editingPass?'회원권 수정됨 ✅':'회원권 추가됨 ✅');
+    editingPass=null;
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+window.deletePass=async function(){
+  if(!editingPass)return;
+  const m=members.find(x=>x.id===editingPass.memberId||x.id===cardId);if(!m)return;
+  if(!confirm('이 회원권을 삭제하시겠습니까?'))return;
+  const passes=getPasses(m).filter((_,i)=>i!==editingPass.passIdx);
+  try{
+    await updateDoc(doc(db,'members',cardId),{passes});
+    closeSheet('pass-sheet');showToast('회원권 삭제됨');editingPass=null;
+  }catch(e){showToast('삭제 실패: '+e.message);}
+};
+
+/* ── REGISTER (신규 회원) ── */
+window.calcExpire=function(){
+  const payDate=document.getElementById('f-start').value;
+  const startDate=document.getElementById('f-startdate').value;
+  const type=document.getElementById('f-type').value;
+  const customExpire=document.getElementById('f-custom-expire').value;
+  const box=document.getElementById('expire-box');
+  const base=startDate||payDate;
+  if(customExpire){document.getElementById('expire-val').textContent=fmtDate(new Date(customExpire))+' (수동설정)';box.classList.add('show');}
+  else if(base&&type){document.getElementById('expire-val').textContent=fmtDate(passExpireDate({start:base,type,holdings:[]}));box.classList.add('show');}
+  else box.classList.remove('show');
+};
+function resetForm(){
+  ['f-name','f-phone','f-price','f-memo','f-startdate','f-custom-expire'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-start').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-type').value='';document.getElementById('f-payment').value='카드';
+  document.getElementById('expire-box').classList.remove('show');
+}
+window.saveMember=async function(){
+  const name=document.getElementById('f-name').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const start=document.getElementById('f-start').value;
+  const startDate=document.getElementById('f-startdate').value||null;
+  const type=document.getElementById('f-type').value;
+  const price=document.getElementById('f-price').value;
+  const customExpire=document.getElementById('f-custom-expire').value||null;
+  if(!name||!phone||!start||!type||!price){showToast('필수 항목을 모두 입력해주세요');return;}
+  const pass={type,start,startDate,price:Number(price),
+    payment:document.getElementById('f-payment').value,
+    memo:document.getElementById('f-memo').value.trim(),
+    customExpire,holdings:[]};
+  try{
+    await addDoc(col,{name,phone,memo:'',passes:[pass],createdAt:serverTimestamp()});
+    resetForm();showToast(`${name} 회원 등록 완료 ✅`);switchTab('members');
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+/* ── SHEETS ── */
+window.openSheet=function(id){document.getElementById(id).classList.add('open');};
+window.closeSheet=function(id){document.getElementById(id).classList.remove('open');};
+window.handleSheetOverlay=function(e,id){if(e.target===document.getElementById(id))closeSheet(id);};
+
+/* ── HOLDING (관리자용) ── */
+window.openHoldingSheet=function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=getPasses(m);
+  const p=passes[passIdx];if(!p)return;
+  if(!holdingLimit(p.type)){showToast(`${p.type}은 홀딩 불가\n수동 추가는 관리자 탭을 이용하세요`);return;}
+  holdingTarget={memberId,passIdx};
+  pendingHoldings=[...(p.holdings||[]).map(h=>({...h}))];
+  renderHoldingList(p);updateHoldingExpirePreview(p);
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('h-start').value=today;
+  document.getElementById('h-end').value=today;
+  document.getElementById('holding-days-preview').textContent='';
+  openSheet('holding-sheet');
+};
+function renderHoldingList(p){
+  const el=document.getElementById('holding-existing-list');
+  const limit=holdingLimit(p.type),used=totalHoldingDays(pendingHoldings),remain=Math.max(0,limit-used);
+  const barPct=Math.min(100,Math.round((used/limit)*100));
+  const barColor=remain===0?'var(--red)':remain<=3?'var(--amber)':'var(--purple)';
+  let html=`<div style="background:var(--purple-light);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px;"><span>홀딩 가능 일수</span><span>${used}일/${limit}일</span></div>
+    <div style="background:rgba(109,58,173,.15);border-radius:4px;height:6px;overflow:hidden;"><div style="height:100%;width:${barPct}%;background:${barColor};border-radius:4px;"></div></div>
+    <div style="font-size:11px;color:${remain===0?'var(--red)':'var(--purple)'};margin-top:6px;text-align:right;font-weight:600;">${remain===0?'⚠️ 한도 초과':'잔여 '+remain+'일'}</div>
+  </div>`;
+  if(!pendingHoldings.length) html+='<div style="font-size:13px;color:var(--text-faint);text-align:center;padding:8px 0;">홀딩 내역 없음</div>';
+  else html+=`<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">홀딩 내역</div>`+
+    pendingHoldings.map((h,i)=>{const days=Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1;
+      return`<div class="holding-item"><div><div class="holding-item-info">${fmtDate(h.start)}~${fmtDate(h.end)}</div><div class="holding-item-days">${days}일</div></div><button class="holding-delete" onclick="removeHolding(${i})">✕</button></div>`;}).join('');
+  el.innerHTML=html;
+}
+function updateHoldingExpirePreview(p){
+  const fakeP={...p,holdings:pendingHoldings};
+  document.getElementById('holding-expire-val').textContent=fmtDate(passExpireDate(fakeP));
+}
+window.removeHolding=function(idx){
+  pendingHoldings.splice(idx,1);
+  if(!holdingTarget)return;
+  const m=members.find(x=>x.id===holdingTarget.memberId);
+  if(!m)return;
+  const p=getPasses(m)[holdingTarget.passIdx];
+  renderHoldingList(p);updateHoldingExpirePreview(p);
+};
+window.previewHoldingDays=function(){
+  const s=document.getElementById('h-start').value,e=document.getElementById('h-end').value;
+  const el=document.getElementById('holding-days-preview');
+  if(!holdingTarget||!s||!e){el.textContent='';return;}
+  const m=members.find(x=>x.id===holdingTarget.memberId);
+  const p=getPasses(m||{})[holdingTarget.passIdx];
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  if(days<1){el.textContent='⚠️ 종료일이 빠릅니다';el.style.color='var(--red)';return;}
+  const remain=holdingRemain(p?.type,pendingHoldings);
+  if(days>remain){el.textContent=`⚠️ 잔여 ${remain}일 초과`;el.style.color='var(--red)';}
+  else{el.textContent=`📅 ${days}일 예정 (잔여 ${remain-days}일)`;el.style.color='var(--purple)';}
+};
+window.addHolding=function(){
+  const s=document.getElementById('h-start').value,e=document.getElementById('h-end').value;
+  if(!s||!e){showToast('날짜를 입력해주세요');return;}
+  if(new Date(e)<new Date(s)){showToast('종료일이 시작일보다 빠릅니다');return;}
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  if(!holdingTarget)return;
+  const m=members.find(x=>x.id===holdingTarget.memberId);
+  const p=getPasses(m||{})[holdingTarget.passIdx];
+  const remain=holdingRemain(p?.type,pendingHoldings);
+  if(days>remain){showToast(`잔여 홀딩 가능일(${remain}일)을 초과합니다`);return;}
+  pendingHoldings.push({start:s,end:e});
+  renderHoldingList(p);updateHoldingExpirePreview(p);
+  document.getElementById('holding-days-preview').textContent='';showToast(`${days}일 추가됨 ✅`);
+};
+window.saveHolding=async function(){
+  if(!holdingTarget)return;
+  const m=members.find(x=>x.id===holdingTarget.memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  passes[holdingTarget.passIdx]={...passes[holdingTarget.passIdx],holdings:pendingHoldings};
+  try{
+    await updateDoc(doc(db,'members',holdingTarget.memberId),{passes});
+    closeSheet('holding-sheet');showToast('홀딩 저장됨 ✅');holdingTarget=null;
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+/* ── MY TAB ── */
+let myPassTab='active';
+window.switchMyPassTab=function(tab,btn){
+  myPassTab=tab;
+  document.querySelectorAll('.my-pass-tab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderMyPassList();
+};
+
+function renderMyTab(){
+  if(!currentUser||currentUser.type!=='member')return;
+  const m=members.find(x=>x.id===currentUser.memberId);
+  const el=document.getElementById('my-content');
+  if(!m){el.innerHTML='<div class="empty"><div class="empty-icon">❓</div>회원 정보를 찾을 수 없습니다</div>';return;}
+  el.innerHTML=`
+    <div style="font-size:16px;font-weight:800;margin-bottom:14px;">${m.name} 님의 회원권</div>
+    <div class="my-pass-tabs">
+      <button class="my-pass-tab on" onclick="switchMyPassTab('active',this)">✅ 현재 유효</button>
+      <button class="my-pass-tab" onclick="switchMyPassTab('other',this)">📋 만료 / 예정</button>
+    </div>
+    <div id="my-pass-list"></div>`;
+  myPassTab='active';
+  renderMyPassList();
+}
+
+function renderMyPassList(){
+  const m=members.find(x=>x.id===currentUser.memberId);if(!m)return;
+  const passes=getPasses(m);
+  const el=document.getElementById('my-pass-list');if(!el)return;
+  const activeStatuses=['active','expiring','holding'];
+  const otherStatuses=['pending','expired'];
+  const pool=myPassTab==='active'
+    ?passes.filter(p=>activeStatuses.includes(passStatus(p)))
+    :passes.filter(p=>otherStatuses.includes(passStatus(p)));
+  if(!pool.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">${myPassTab==='active'?'🏋':'📦'}</div>${myPassTab==='active'?'현재 유효한 회원권이 없습니다':'만료 또는 예정 회원권이 없습니다'}</div>`;
+    return;
+  }
+  el.innerHTML=pool.map((p,i)=>{
+    const s=passStatus(p);
+    const diff=Math.ceil((passExpireDate(p)-now0())/86400000);
+    const heroClass=s==='holding'?'holding-bg':s==='pending'?'pending-bg':s==='expired'?'expired-bg':'active-bg';
+    const totalDays=(TYPE_DAYS[p.type]||30)+totalHoldingDays(p.holdings||[]);
+    const base=p.startDate||p.start;
+    const usedDays=Math.max(0,Math.ceil((now0()-new Date(base))/86400000));
+    const pct=s==='pending'?0:s==='expired'?100:Math.min(100,Math.round(usedDays/totalDays*100));
+    const dDayText=s==='pending'?`시작까지 D-${Math.ceil((new Date(base)-now0())/86400000)}`:
+      s==='holding'?'홀딩중':s==='expired'?'만료됨':`D-${diff}`;
+    const dDayLabel=s==='pending'?'시작 예정':s==='holding'?'홀딩 기간':s==='expired'?'회원권 만료':'만료까지 남은 일수';
+    const limit=holdingLimit(p.type),used=totalHoldingDays(p.holdings||[]),remain=Math.max(0,limit-used);
+    const canHold=(s==='active'||s==='holding')&&limit>0&&remain>0;
+    const realPassIdx=passes.indexOf(p);
+    return`<div class="pass-card">
+      <div class="pass-hero ${heroClass}">
+        <div class="pass-hero-name">${p.type}</div>
+        <div class="pass-hero-type">${fmtPrice(p.price)} · ${p.payment}</div>
+        <div class="pass-dday">${dDayText}</div>
+        <div class="pass-dday-label">${dDayLabel}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="pass-info">
+        <div class="info-row"><span class="info-key">📋 결제일</span><span class="info-val">${fmtDate(p.start)}</span></div>
+        ${p.startDate&&p.startDate!==p.start?`<div class="info-row"><span class="info-key">▶ 시작일</span><span class="info-val">${fmtDate(p.startDate)}</span></div>`:''}
+        <div class="info-row"><span class="info-key">⏰ 만료일</span><span class="info-val">${fmtDate(passExpireDate(p))}</span></div>
+        ${limit>0?`<div class="info-row"><span class="info-key">⏸ 홀딩 잔여</span><span class="info-val" style="color:${remain>0?'var(--green)':'var(--red)'};">${remain}일 / ${limit}일</span></div>`:''}
+        ${isCountPass(p)?`<div class="info-row"><span class="info-key">🥊 남은 횟수</span><span class="info-val" style="color:${getRemainCount(p)===0?'var(--red)':getRemainCount(p)<=3?'var(--amber)':'var(--green);font-size:18px;font-weight:800;'};">${getRemainCount(p)}회 / ${SESSION_TOTAL}회</span></div>`:''}
+        ${isCountPass(p)&&(p.attLog||[]).length>0?`<div class="info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <span class="info-key" style="margin-bottom:2px;">출석 기록 (최근 5회)</span>
+          ${[...(p.attLog||[])].reverse().slice(0,5).map(l=>`<span style="font-size:11px;color:var(--text-muted);">✅ ${fmtDate(l.date)}</span>`).join('')}
+        </div>`:''}        ${(p.holdings||[]).length>0?`<div class="info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <span class="info-key" style="margin-bottom:2px;">홀딩 내역</span>
+          ${p.holdings.map(h=>{const days=Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1;return`<span style="font-size:12px;color:var(--purple);">${fmtDate(h.start)}~${fmtDate(h.end)} (${days}일${h.isAdmin?' 관리자':''})</span>`;}).join('')}
+        </div>`:''}
+      </div>
+      ${canHold?`<div style="padding:12px 16px;"><button class="btn btn-purple" onclick="openMyHoldingSheet(${realPassIdx})">⏸ 홀딩 신청</button></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ── MY HOLDING ── */
+window.openMyHoldingSheet=function(passIdx){
+  const m=members.find(x=>x.id===currentUser.memberId);if(!m)return;
+  const passes=getPasses(m);
+  const p=passes[passIdx];if(!p)return;
+  myHoldingTarget={passIdx};
+  const limit=holdingLimit(p.type),used=totalHoldingDays(p.holdings||[]),remain=Math.max(0,limit-used);
+  document.getElementById('my-holding-info').innerHTML=`<b>홀딩 잔여: ${remain}일</b> (${limit}일 한도 중 ${used}일 사용)`;
+  const holdings=p.holdings||[];
+  document.getElementById('my-holding-existing').innerHTML=holdings.length?
+    `<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">기존 홀딩 내역</div>`+
+    holdings.map(h=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--purple);padding:6px 0;border-bottom:1px solid rgba(109,58,173,.1);">
+      <span>${fmtDate(h.start)}~${fmtDate(h.end)}</span>
+      <span>${Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1}일${h.isAdmin?' (관리자)':''}</span>
+    </div>`).join(''):'';
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('my-h-start').value=today;
+  document.getElementById('my-h-end').value=today;
+  document.getElementById('my-days-preview').textContent='';
+  openSheet('my-holding-sheet');
+};
+window.myPreviewDays=function(){
+  const s=document.getElementById('my-h-start').value,e=document.getElementById('my-h-end').value;
+  const el=document.getElementById('my-days-preview');
+  if(!myHoldingTarget||!s||!e){el.textContent='';return;}
+  const m=members.find(x=>x.id===currentUser.memberId);
+  const p=getPasses(m||{})[myHoldingTarget.passIdx];
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  if(days<1){el.textContent='⚠️ 종료일이 빠릅니다';el.style.color='var(--red)';return;}
+  const remain=holdingRemain(p?.type,p?.holdings||[]);
+  if(days>remain){el.textContent=`⚠️ 잔여 홀딩 ${remain}일 초과`;el.style.color='var(--red)';}
+  else{el.textContent=`📅 ${days}일 홀딩 신청 예정 (신청 후 잔여 ${remain-days}일)`;el.style.color='var(--purple)';}
+};
+window.myAddHolding=async function(){
+  const m=members.find(x=>x.id===currentUser.memberId);if(!m)return;
+  if(!myHoldingTarget)return;
+  const passes=[...getPasses(m)];
+  const p=passes[myHoldingTarget.passIdx];if(!p)return;
+  const s=document.getElementById('my-h-start').value,e=document.getElementById('my-h-end').value;
+  if(!s||!e){showToast('날짜를 입력해주세요');return;}
+  if(new Date(e)<new Date(s)){showToast('종료일이 시작일보다 빠릅니다');return;}
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  const remain=holdingRemain(p.type,p.holdings||[]);
+  if(days>remain){showToast(`잔여 홀딩 가능일(${remain}일)을 초과합니다`);return;}
+  passes[myHoldingTarget.passIdx]={...p,holdings:[...(p.holdings||[]),{start:s,end:e}]};
+  try{
+    await updateDoc(doc(db,'members',m.id),{passes});
+    closeSheet('my-holding-sheet');showToast(`${days}일 홀딩 신청 완료 ✅`);myHoldingTarget=null;
+  }catch(err){showToast('신청 실패: '+err.message);}
+};
+
+/* ── ATTENDANCE (횟수권) ── */
+const SESSION_TOTAL = 10; // 10회권 기본 총 횟수
+
+function isCountPass(p){ return p.type==='10회'; }
+
+// passes에 usedCount 필드로 사용 횟수 관리
+function getUsedCount(p){ return p.usedCount||0; }
+function getRemainCount(p){ return Math.max(0, SESSION_TOTAL - getUsedCount(p)); }
+
+function renderAdminAttMemberSelect(){
+  const sel=document.getElementById('att-member-select');
+  if(!sel)return;
+  const cur=sel.value;
+  // 횟수권이 있는 회원만 필터
+  const filtered=[...members].filter(m=>getPasses(m).some(p=>isCountPass(p)))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML='<option value="">회원을 선택하세요</option>'+
+    filtered.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+window.attMemberSelected=function(){
+  const id=document.getElementById('att-member-select').value;
+  const wrap=document.getElementById('att-pass-list');
+  if(!id){wrap.style.display='none';return;}
+  const m=members.find(x=>x.id===id);if(!m)return;
+  const countPasses=getPasses(m).map((p,i)=>({p,i})).filter(({p})=>isCountPass(p));
+  if(!countPasses.length){wrap.innerHTML='<div style="font-size:13px;color:var(--text-faint);text-align:center;padding:12px;">횟수권이 없습니다</div>';wrap.style.display='';return;}
+  wrap.innerHTML=countPasses.map(({p,i})=>{
+    const used=getUsedCount(p),remain=getRemainCount(p);
+    const pct=Math.round(used/SESSION_TOTAL*100);
+    const statusColor=remain===0?'var(--red)':remain<=3?'var(--amber)':'var(--green)';
+    return`<div class="att-pass-card" id="att-pass-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:700;">10회권</span>
+        <span style="font-size:11px;color:var(--text-muted);">${fmtDate(p.start)} 등록</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">만료: ${fmtDate(passExpireDate(p))}</div>
+      <div class="att-count-row">
+        <div>
+          <div class="att-count-num" style="color:${statusColor};">${remain}회</div>
+          <div class="att-count-label">남은 횟수 (총 ${SESSION_TOTAL}회 중 ${used}회 사용)</div>
+        </div>
+        <div style="text-align:right;font-size:28px;">${remain===0?'🎯':remain<=3?'⚠️':'💪'}</div>
+      </div>
+      <div class="count-bar"><div class="count-fill" style="width:${pct}%;background:${statusColor};"></div></div>
+      <div class="att-btn-row" style="margin-top:12px;">
+        <button class="att-btn att-btn-minus" onclick="attCheckIn('${id}',${i})" ${remain===0?'disabled style="opacity:.4;"':''}>✅ 출석 (-1회)</button>
+        <button class="att-btn att-btn-plus" onclick="attUndo('${id}',${i})" ${used===0?'disabled style="opacity:.4;"':''}>↩️ 취소 (+1회)</button>
+        <button class="att-btn att-btn-edit" onclick="attEditCount('${id}',${i})">✏️</button>
+      </div>
+      <div id="att-log-${i}" style="margin-top:10px;font-size:11px;color:var(--text-muted);"></div>
+    </div>`;
+  }).join('');
+  wrap.style.display='';
+};
+
+window.attCheckIn=async function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const p=passes[passIdx];if(!p||!isCountPass(p))return;
+  const used=getUsedCount(p);
+  if(used>=SESSION_TOTAL){showToast('남은 횟수가 없습니다');return;}
+  // 출석 로그 추가
+  const log={date:new Date().toISOString().split('T')[0],action:'출석'};
+  const attLog=[...(p.attLog||[]),log];
+  passes[passIdx]={...p,usedCount:used+1,attLog};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`출석 체크! 잔여 ${SESSION_TOTAL-used-1}회 남음 ✅`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+window.attUndo=async function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const p=passes[passIdx];if(!p||!isCountPass(p))return;
+  const used=getUsedCount(p);
+  if(used<=0){showToast('취소할 출석이 없습니다');return;}
+  if(!confirm('마지막 출석을 취소하시겠습니까?'))return;
+  const attLog=[...(p.attLog||[])];
+  attLog.pop();
+  passes[passIdx]={...p,usedCount:used-1,attLog};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`출석 취소됨. 잔여 ${SESSION_TOTAL-used+1}회`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+window.attEditCount=function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const p=getPasses(m)[passIdx];if(!p)return;
+  const used=getUsedCount(p);
+  const input=prompt(`현재 사용 횟수: ${used}회\n새로운 사용 횟수를 입력하세요 (0~${SESSION_TOTAL}):`,used);
+  if(input===null)return;
+  const num=parseInt(input);
+  if(isNaN(num)||num<0||num>SESSION_TOTAL){showToast(`0~${SESSION_TOTAL} 사이의 숫자를 입력해주세요`);return;}
+  attSetCount(memberId,passIdx,num);
+};
+
+async function attSetCount(memberId,passIdx,usedCount){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  passes[passIdx]={...passes[passIdx],usedCount};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`횟수 수정됨: 잔여 ${SESSION_TOTAL-usedCount}회 ✅`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+}
+
+/* ── ADMIN ── */
+
+function renderAdminMemberSelect(){
+  const sel=document.getElementById('admin-member-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">회원을 선택하세요</option>'+
+    [...members].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+window.adminMemberSelected=function(){
+  const id=document.getElementById('admin-member-select').value;
+  const wrap=document.getElementById('admin-pass-select-wrap');
+  const infoBox=document.getElementById('admin-member-info');
+  document.getElementById('admin-days-preview').textContent='';
+  document.getElementById('admin-expire-box').classList.remove('show');
+  if(!id){wrap.style.display='none';infoBox.style.display='none';return;}
+  const m=members.find(x=>x.id===id);if(!m)return;
+  const passes=getPasses(m);
+  const sel=document.getElementById('admin-pass-select');
+  sel.innerHTML='<option value="">회원권을 선택하세요</option>'+
+    passes.map((p,i)=>`<option value="${i}">${p.type} (${fmtDate(p.start)}~${fmtDate(passExpireDate(p))})</option>`).join('');
+  wrap.style.display='';infoBox.style.display='none';
+};
+
+window.adminPassSelected=function(){
+  const memberId=document.getElementById('admin-member-select').value;
+  const passIdx=document.getElementById('admin-pass-select').value;
+  const infoBox=document.getElementById('admin-member-info');
+  if(!memberId||passIdx===''){infoBox.style.display='none';return;}
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const p=getPasses(m)[Number(passIdx)];if(!p)return;
+  const used=totalHoldingDays(p.holdings||[]),limit=holdingLimit(p.type);
+  infoBox.innerHTML=`<div style="font-weight:700;margin-bottom:4px;">${m.name} · ${p.type}</div>
+    <div style="font-size:11px;color:var(--text-muted);">만료: ${fmtDate(passExpireDate(p))} · 홀딩 ${used}일/${limit||'무제한'}일</div>`;
+  infoBox.style.display='';
+  adminPreviewDays();
+};
+
+window.adminPreviewDays=function(){
+  const s=document.getElementById('admin-h-start').value,e=document.getElementById('admin-h-end').value;
+  const el=document.getElementById('admin-days-preview'),expBox=document.getElementById('admin-expire-box');
+  const memberId=document.getElementById('admin-member-select').value;
+  const passIdx=document.getElementById('admin-pass-select').value;
+  const m=members.find(x=>x.id===memberId);
+  const p=m?getPasses(m)[Number(passIdx)]:null;
+  if(!s||!e||!p){el.textContent='';expBox.classList.remove('show');return;}
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  if(days<1){el.textContent='⚠️ 종료일이 빠릅니다';el.style.color='var(--red)';expBox.classList.remove('show');return;}
+  el.textContent=`📅 ${days}일 수동 홀딩 예정`;el.style.color='var(--accent)';
+  const fakeP={...p,holdings:[...(p.holdings||[]),{start:s,end:e}]};
+  document.getElementById('admin-expire-val').textContent=fmtDate(passExpireDate(fakeP));
+  expBox.classList.add('show');
+};
+
+window.adminAddHolding=async function(){
+  const memberId=document.getElementById('admin-member-select').value;
+  const passIdx=Number(document.getElementById('admin-pass-select').value);
+  const s=document.getElementById('admin-h-start').value,e=document.getElementById('admin-h-end').value;
+  const reason=document.getElementById('admin-h-reason').value.trim();
+  if(!memberId||isNaN(passIdx)){showToast('회원과 회원권을 선택해주세요');return;}
+  if(!s||!e){showToast('날짜를 입력해주세요');return;}
+  if(new Date(e)<new Date(s)){showToast('종료일이 시작일보다 빠릅니다');return;}
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const p=passes[passIdx];if(!p)return;
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  passes[passIdx]={...p,holdings:[...(p.holdings||[]),{start:s,end:e,isAdmin:true,reason:reason||'관리자 수동 추가'}]};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    ['admin-h-start','admin-h-end','admin-h-reason'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('admin-days-preview').textContent='';
+    document.getElementById('admin-expire-box').classList.remove('show');
+    showToast(`${m.name} 회원 ${days}일 홀딩 추가 ✅`);
+    renderAdminAllHoldingList();
+  }catch(err){showToast('저장 실패: '+err.message);}
+};
+
+function renderAdminAllHoldingList(){
+  const el=document.getElementById('admin-all-holding-list');if(!el)return;
+  const entries=[];
+  members.forEach(m=>{
+    getPasses(m).forEach((p,pi)=>{
+      (p.holdings||[]).forEach((h,hi)=>{
+        entries.push({memberId:m.id,name:m.name,type:p.type,passIdx:pi,holdingIdx:hi,...h});
+      });
+    });
+  });
+  entries.sort((a,b)=>b.start.localeCompare(a.start));
+  if(!entries.length){el.innerHTML='<div style="font-size:13px;color:var(--text-faint);text-align:center;padding:16px;">홀딩 내역 없음</div>';return;}
+  const today=new Date().toISOString().split('T')[0];
+  el.innerHTML=entries.map(h=>{
+    const days=Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1;
+    const isActive=h.start<=today&&h.end>=today;
+    return`<div style="padding:12px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div>
+          <span style="font-weight:700;font-size:13px;">${h.name}</span>
+          <span style="font-size:10px;color:var(--text-muted);margin-left:6px;">${h.type}</span>
+          ${isActive?'<span style="font-size:10px;background:var(--purple-light);color:var(--purple);padding:1px 6px;border-radius:20px;font-weight:700;margin-left:4px;">진행중</span>':''}
+          ${h.isAdmin?'<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:20px;font-weight:700;margin-left:2px;">관리자</span>':''}
+        </div>
+        <span style="font-size:11px;background:var(--purple-light);color:var(--purple);padding:2px 8px;border-radius:20px;font-weight:700;">${days}일</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);">${fmtDate(h.start)} ~ ${fmtDate(h.end)}</div>
+      ${h.reason?`<div style="font-size:11px;color:var(--text-faint);">사유: ${h.reason}</div>`:''}
+      <button onclick="openHoldingEditSheet('${h.memberId}',${h.passIdx},${h.holdingIdx})"
+        style="margin-top:8px;padding:5px 14px;font-size:12px;font-weight:600;border:1px solid var(--border-strong);border-radius:20px;background:var(--surface);color:var(--text-muted);cursor:pointer;">✏️ 수정/삭제</button>
+    </div>`;
+  }).join('');
+}
+
+let holdingEditInfo=null;
+window.openHoldingEditSheet=function(memberId,passIdx,holdingIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const p=getPasses(m)[passIdx];if(!p)return;
+  const h=(p.holdings||[])[holdingIdx];if(!h)return;
+  holdingEditInfo={memberId,passIdx,holdingIdx};
+  document.getElementById('holding-edit-member-info').innerHTML=
+    `<div style="font-weight:700;margin-bottom:4px;">${m.name} · ${p.type}</div>
+     <div style="font-size:11px;color:var(--text-muted);">현재 만료일: ${fmtDate(passExpireDate(p))}</div>`;
+  document.getElementById('he-start').value=h.start;
+  document.getElementById('he-end').value=h.end;
+  document.getElementById('he-reason').value=h.reason||'';
+  hePreviewDays();
+  openSheet('holding-edit-sheet');
+};
+window.hePreviewDays=function(){
+  const s=document.getElementById('he-start').value,e=document.getElementById('he-end').value;
+  const el=document.getElementById('he-days-preview'),expBox=document.getElementById('he-expire-box');
+  if(!holdingEditInfo||!s||!e){el.textContent='';expBox.classList.remove('show');return;}
+  const days=Math.ceil((new Date(e)-new Date(s))/86400000)+1;
+  if(days<1){el.textContent='⚠️ 종료일이 빠릅니다';el.style.color='var(--red)';expBox.classList.remove('show');return;}
+  el.textContent=`📅 ${days}일`;el.style.color='var(--purple)';
+  const m=members.find(x=>x.id===holdingEditInfo.memberId);
+  if(m){
+    const passes=getPasses(m);
+    const fakeHoldings=[...(passes[holdingEditInfo.passIdx].holdings||[])];
+    fakeHoldings[holdingEditInfo.holdingIdx]={...fakeHoldings[holdingEditInfo.holdingIdx],start:s,end:e};
+    document.getElementById('he-expire-val').textContent=fmtDate(passExpireDate({...passes[holdingEditInfo.passIdx],holdings:fakeHoldings}));
+    expBox.classList.add('show');
+  }
+};
+window.saveHoldingEdit=async function(){
+  if(!holdingEditInfo)return;
+  const s=document.getElementById('he-start').value,e=document.getElementById('he-end').value,reason=document.getElementById('he-reason').value.trim();
+  if(!s||!e){showToast('날짜를 입력해주세요');return;}
+  if(new Date(e)<new Date(s)){showToast('종료일이 빠릅니다');return;}
+  const m=members.find(x=>x.id===holdingEditInfo.memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const holdings=[...(passes[holdingEditInfo.passIdx].holdings||[])];
+  holdings[holdingEditInfo.holdingIdx]={...holdings[holdingEditInfo.holdingIdx],start:s,end:e,reason};
+  passes[holdingEditInfo.passIdx]={...passes[holdingEditInfo.passIdx],holdings};
+  try{
+    await updateDoc(doc(db,'members',holdingEditInfo.memberId),{passes});
+    closeSheet('holding-edit-sheet');showToast('홀딩 수정됨 ✅');holdingEditInfo=null;
+  }catch(err){showToast('저장 실패: '+err.message);}
+};
+window.deleteHoldingEntry=async function(){
+  if(!holdingEditInfo)return;
+  const m=members.find(x=>x.id===holdingEditInfo.memberId);if(!m)return;
+  if(!confirm('이 홀딩을 삭제하시겠습니까?'))return;
+  const passes=[...getPasses(m)];
+  const holdings=(passes[holdingEditInfo.passIdx].holdings||[]).filter((_,i)=>i!==holdingEditInfo.holdingIdx);
+  passes[holdingEditInfo.passIdx]={...passes[holdingEditInfo.passIdx],holdings};
+  try{
+    await updateDoc(doc(db,'members',holdingEditInfo.memberId),{passes});
+    closeSheet('holding-edit-sheet');showToast('홀딩 삭제됨');holdingEditInfo=null;
+  }catch(err){showToast('삭제 실패: '+err.message);}
+};
+
+/* ── INIT ── */
+document.getElementById('f-start').value=new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
