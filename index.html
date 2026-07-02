@@ -169,6 +169,20 @@ input:focus,select:focus{outline:none;border-color:var(--accent);}
 .pass-info{padding:0 16px;}
 .pass-info .info-row:last-child{border-bottom:none;}
 
+/* ATTENDANCE */
+.att-pass-card{background:var(--bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;}
+.att-count-row{display:flex;align-items:center;justify-content:space-between;margin:12px 0;}
+.att-count-num{font-size:36px;font-weight:800;letter-spacing:-1px;color:var(--green);}
+.att-count-label{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.att-btn-row{display:flex;gap:8px;}
+.att-btn{flex:1;padding:11px;font-size:13px;font-weight:700;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:inherit;transition:opacity .1s;}
+.att-btn:active{opacity:.75;}
+.att-btn-minus{background:var(--accent);color:white;}
+.att-btn-plus{background:var(--green-light);color:var(--green);}
+.att-btn-edit{background:var(--bg);color:var(--text-muted);border:1px solid var(--border);}
+.count-bar{background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-top:10px;}
+.count-fill{height:100%;border-radius:4px;background:var(--green);transition:width .4s;}
+
 /* TOAST / EMPTY */
 .empty{text-align:center;padding:48px 24px;color:var(--text-faint);}
 .empty-icon{font-size:40px;margin-bottom:10px;}
@@ -293,7 +307,15 @@ input:focus,select:focus{outline:none;border-color:var(--accent);}
 
     <!-- ADMIN -->
     <div id="tab-admin" class="section">
-      <div class="card">
+      <!-- 횟수권 출석 관리 -->
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">🥊 횟수권 출석 체크 <span style="font-size:10px;background:var(--green-light);color:var(--green);padding:2px 7px;border-radius:20px;font-weight:700;margin-left:4px;">관리자 전용</span></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">출석 시 1회 차감하거나 남은 횟수를 직접 수정합니다.</div>
+        <div class="form-group"><label>회원 선택</label>
+          <select id="att-member-select" onchange="attMemberSelected()"><option value="">회원을 선택하세요</option></select>
+        </div>
+        <div id="att-pass-list" style="display:none;"></div>
+      </div>
         <div class="card-title">⏸ 수동 홀딩 추가 <span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:2px 7px;border-radius:20px;font-weight:700;margin-left:4px;">관리자 전용</span></div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">홀딩 한도 제한 없이 특정 회원권에 홀딩 기간을 추가합니다.</div>
         <div class="form-group"><label>회원 선택</label>
@@ -624,7 +646,11 @@ function refreshCurrent(){
   if(a==='tab-dashboard')renderDashboard();
   else if(a==='tab-members')renderMembers();
   else if(a==='tab-my')renderMyTab();
-  else if(a==='tab-admin'){renderAdminMemberSelect();renderAdminAllHoldingList();}
+  else if(a==='tab-admin'){renderAdminMemberSelect();renderAdminAllHoldingList();renderAdminAttMemberSelect();
+    // 출석 카드 선택된 상태면 갱신
+    const selId=document.getElementById('att-member-select')?.value;
+    if(selId) window.attMemberSelected();
+  }
 }
 
 /* ── LOGIN ── */
@@ -690,7 +716,7 @@ window.switchTab=function(id){
   if(id==='members')renderMembers();
   if(id==='register')resetForm();
   if(id==='my')renderMyTab();
-  if(id==='admin'){renderAdminMemberSelect();renderAdminAllHoldingList();}
+  if(id==='admin'){renderAdminMemberSelect();renderAdminAllHoldingList();renderAdminAttMemberSelect();}
 };
 
 /* ── DASHBOARD ── */
@@ -1144,7 +1170,11 @@ function renderMyPassList(){
         ${p.startDate&&p.startDate!==p.start?`<div class="info-row"><span class="info-key">▶ 시작일</span><span class="info-val">${fmtDate(p.startDate)}</span></div>`:''}
         <div class="info-row"><span class="info-key">⏰ 만료일</span><span class="info-val">${fmtDate(passExpireDate(p))}</span></div>
         ${limit>0?`<div class="info-row"><span class="info-key">⏸ 홀딩 잔여</span><span class="info-val" style="color:${remain>0?'var(--green)':'var(--red)'};">${remain}일 / ${limit}일</span></div>`:''}
-        ${(p.holdings||[]).length>0?`<div class="info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        ${isCountPass(p)?`<div class="info-row"><span class="info-key">🥊 남은 횟수</span><span class="info-val" style="color:${getRemainCount(p)===0?'var(--red)':getRemainCount(p)<=3?'var(--amber)':'var(--green);font-size:18px;font-weight:800;'};">${getRemainCount(p)}회 / ${SESSION_TOTAL}회</span></div>`:''}
+        ${isCountPass(p)&&(p.attLog||[]).length>0?`<div class="info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <span class="info-key" style="margin-bottom:2px;">출석 기록 (최근 5회)</span>
+          ${[...(p.attLog||[])].reverse().slice(0,5).map(l=>`<span style="font-size:11px;color:var(--text-muted);">✅ ${fmtDate(l.date)}</span>`).join('')}
+        </div>`:''}        ${(p.holdings||[]).length>0?`<div class="info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
           <span class="info-key" style="margin-bottom:2px;">홀딩 내역</span>
           ${p.holdings.map(h=>{const days=Math.ceil((new Date(h.end)-new Date(h.start))/86400000)+1;return`<span style="font-size:12px;color:var(--purple);">${fmtDate(h.start)}~${fmtDate(h.end)} (${days}일${h.isAdmin?' 관리자':''})</span>`;}).join('')}
         </div>`:''}
@@ -1204,6 +1234,116 @@ window.myAddHolding=async function(){
     closeSheet('my-holding-sheet');showToast(`${days}일 홀딩 신청 완료 ✅`);myHoldingTarget=null;
   }catch(err){showToast('신청 실패: '+err.message);}
 };
+
+/* ── ATTENDANCE (횟수권) ── */
+const SESSION_TOTAL = 10; // 10회권 기본 총 횟수
+
+function isCountPass(p){ return p.type==='10회'; }
+
+// passes에 usedCount 필드로 사용 횟수 관리
+function getUsedCount(p){ return p.usedCount||0; }
+function getRemainCount(p){ return Math.max(0, SESSION_TOTAL - getUsedCount(p)); }
+
+function renderAdminAttMemberSelect(){
+  const sel=document.getElementById('att-member-select');
+  if(!sel)return;
+  const cur=sel.value;
+  // 횟수권이 있는 회원만 필터
+  const filtered=[...members].filter(m=>getPasses(m).some(p=>isCountPass(p)))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML='<option value="">회원을 선택하세요</option>'+
+    filtered.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+window.attMemberSelected=function(){
+  const id=document.getElementById('att-member-select').value;
+  const wrap=document.getElementById('att-pass-list');
+  if(!id){wrap.style.display='none';return;}
+  const m=members.find(x=>x.id===id);if(!m)return;
+  const countPasses=getPasses(m).map((p,i)=>({p,i})).filter(({p})=>isCountPass(p));
+  if(!countPasses.length){wrap.innerHTML='<div style="font-size:13px;color:var(--text-faint);text-align:center;padding:12px;">횟수권이 없습니다</div>';wrap.style.display='';return;}
+  wrap.innerHTML=countPasses.map(({p,i})=>{
+    const used=getUsedCount(p),remain=getRemainCount(p);
+    const pct=Math.round(used/SESSION_TOTAL*100);
+    const statusColor=remain===0?'var(--red)':remain<=3?'var(--amber)':'var(--green)';
+    return`<div class="att-pass-card" id="att-pass-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:13px;font-weight:700;">10회권</span>
+        <span style="font-size:11px;color:var(--text-muted);">${fmtDate(p.start)} 등록</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">만료: ${fmtDate(passExpireDate(p))}</div>
+      <div class="att-count-row">
+        <div>
+          <div class="att-count-num" style="color:${statusColor};">${remain}회</div>
+          <div class="att-count-label">남은 횟수 (총 ${SESSION_TOTAL}회 중 ${used}회 사용)</div>
+        </div>
+        <div style="text-align:right;font-size:28px;">${remain===0?'🎯':remain<=3?'⚠️':'💪'}</div>
+      </div>
+      <div class="count-bar"><div class="count-fill" style="width:${pct}%;background:${statusColor};"></div></div>
+      <div class="att-btn-row" style="margin-top:12px;">
+        <button class="att-btn att-btn-minus" onclick="attCheckIn('${id}',${i})" ${remain===0?'disabled style="opacity:.4;"':''}>✅ 출석 (-1회)</button>
+        <button class="att-btn att-btn-plus" onclick="attUndo('${id}',${i})" ${used===0?'disabled style="opacity:.4;"':''}>↩️ 취소 (+1회)</button>
+        <button class="att-btn att-btn-edit" onclick="attEditCount('${id}',${i})">✏️</button>
+      </div>
+      <div id="att-log-${i}" style="margin-top:10px;font-size:11px;color:var(--text-muted);"></div>
+    </div>`;
+  }).join('');
+  wrap.style.display='';
+};
+
+window.attCheckIn=async function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const p=passes[passIdx];if(!p||!isCountPass(p))return;
+  const used=getUsedCount(p);
+  if(used>=SESSION_TOTAL){showToast('남은 횟수가 없습니다');return;}
+  // 출석 로그 추가
+  const log={date:new Date().toISOString().split('T')[0],action:'출석'};
+  const attLog=[...(p.attLog||[]),log];
+  passes[passIdx]={...p,usedCount:used+1,attLog};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`출석 체크! 잔여 ${SESSION_TOTAL-used-1}회 남음 ✅`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+window.attUndo=async function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  const p=passes[passIdx];if(!p||!isCountPass(p))return;
+  const used=getUsedCount(p);
+  if(used<=0){showToast('취소할 출석이 없습니다');return;}
+  if(!confirm('마지막 출석을 취소하시겠습니까?'))return;
+  const attLog=[...(p.attLog||[])];
+  attLog.pop();
+  passes[passIdx]={...p,usedCount:used-1,attLog};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`출석 취소됨. 잔여 ${SESSION_TOTAL-used+1}회`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+};
+
+window.attEditCount=function(memberId,passIdx){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const p=getPasses(m)[passIdx];if(!p)return;
+  const used=getUsedCount(p);
+  const input=prompt(`현재 사용 횟수: ${used}회\n새로운 사용 횟수를 입력하세요 (0~${SESSION_TOTAL}):`,used);
+  if(input===null)return;
+  const num=parseInt(input);
+  if(isNaN(num)||num<0||num>SESSION_TOTAL){showToast(`0~${SESSION_TOTAL} 사이의 숫자를 입력해주세요`);return;}
+  attSetCount(memberId,passIdx,num);
+};
+
+async function attSetCount(memberId,passIdx,usedCount){
+  const m=members.find(x=>x.id===memberId);if(!m)return;
+  const passes=[...getPasses(m)];
+  passes[passIdx]={...passes[passIdx],usedCount};
+  try{
+    await updateDoc(doc(db,'members',memberId),{passes});
+    showToast(`횟수 수정됨: 잔여 ${SESSION_TOTAL-usedCount}회 ✅`);
+  }catch(e){showToast('저장 실패: '+e.message);}
+}
 
 /* ── ADMIN ── */
 
